@@ -362,6 +362,11 @@ game.GemEntity = me.SpriteObject.extend({
 		this.gemValue = 1;
 		//this.digs = 1;
 		//this.maxDigs = 1;
+		me.input.registerPointerEvent('mousedown', this, this.onClick.bind(this));
+	},
+
+	onClick: function() {
+		console.log(this.name);
 	},
 
 	touch: function(from) {
