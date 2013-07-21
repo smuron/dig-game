@@ -22,7 +22,7 @@ var game = {
         // generate test level on load
         me.game.onLevelLoaded = function(levelId) {
             game.levelNum++;
-            game.map.generateMap(16,16,Math.pow(1.613,game.levelNum*0.5));
+            game.map.generateMap(5+game.levelNum,5+game.levelNum,Math.pow(1.613,game.levelNum*0.5));
             //game.player1 = me.game.add(new game.PlayerEntity(64,64),0);
             game.map.populateLevel();
             me.game.add(new me.ImageLayer('bkg0',640,480,'bkg0',0),2);

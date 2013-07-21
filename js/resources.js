@@ -4,7 +4,7 @@ game.resources = [
 	 * @example
 	 * {name: "example", type:"image", src: "data/img/example.png"},
 	 */
-	 {name: "player", type:"image", src: "/data/img/sprite/player.png"},
+	 {name: "player", type:"image", src: "/data/img/sprite/miner.png"},
 	 
 	 {name: "scan", type:"image", src: "/data/img/sprite/scan.png"},
 	 {name: "scan2", type:"image", src: "/data/img/sprite/scan2.png"},
@@ -13,6 +13,9 @@ game.resources = [
 
 	 {name: "dirt1", type:"image", src: "/data/img/sprite/dirt.png"},
 	 {name: "dirt2", type:"image", src: "/data/img/sprite/dirt2.png"},
+	 {name: "dirt3", type:"image", src: "/data/img/sprite/dirt3.png"},
+	 {name: "dirt4", type:"image", src: "/data/img/sprite/dirt4.png"},
+	 
 	 {name: "gem", type:"image", src: "/data/img/sprite/gem.png"},
 	 {name: "hoist", type:"image", src: "/data/img/sprite/hoist.png"},
 
