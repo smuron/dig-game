@@ -1,6 +1,4 @@
-// TODO
-
-game.PlayerEntity = me.SpriteObject.extend({
+game.PlayerEntity = me.AnimationSheet.extend({
 
 	// boolean, can the player currently move?
 	// disabled when animating or already moving
@@ -10,8 +8,11 @@ game.PlayerEntity = me.SpriteObject.extend({
 			y: y
 		}
         // call the constructor
-        this.parent((x+game.GRID.ORIGIN.X)*game.GRID.TILE_SIZE, (y+game.GRID.ORIGIN.Y)*game.GRID.TILE_SIZE, me.loader.getImage('player'));
-        // set the default horizontal & vertical speed (accel vector)
+        this.parent((x+game.GRID.ORIGIN.X)*game.GRID.TILE_SIZE, (y+game.GRID.ORIGIN.Y)*game.GRID.TILE_SIZE, me.loader.getImage('player'), 16, 16);
+        
+        this.setupAnimations();
+
+		// set the default horizontal & vertical speed (accel vector)
         this.anchorPoint.set(0.5,0.5);
 
         this.hp = 20;
@@ -22,6 +23,15 @@ game.PlayerEntity = me.SpriteObject.extend({
 
         // set the display to follow our position on both axis
         //me.game.viewport.follow(this.pos, me.game.viewport.AXIS.BOTH);
+    },
+
+    setupAnimations: function() {
+    	this.addAnimation("walk_down" ,[0,1,2,3],10);
+    	this.addAnimation("walk_up"   ,[4,5,6,7],10);
+    	this.addAnimation("walk_right",[8,9,10,11],10);
+    	this.addAnimation("walk_left" ,[12,13,14,15],10);
+    	// default animation state
+    	this.setCurrentAnimation("walk_down");
     },
 
     doMove: function(dx,dy) {
@@ -53,14 +63,14 @@ game.PlayerEntity = me.SpriteObject.extend({
     		
     		// attempt to dig / activate
     		if (nextObj && nextObj.touch(this)) {
-    			console.log('touch is true',nextObj,scan);
+    			//console.log('touch is true',nextObj,scan);
     			// if true, then add it back to the array
     			game.map.entityGrid[dx][dy].push(nextObj);
     			if (scan) {
     				game.map.entityGrid[dx][dy].push(scan);
     			}
     		} else {
-    			console.log('touch is false',nextObj,scan);
+    			//console.log('touch is false',nextObj,scan);
     			// we dug it, remove scan result if nothing else is there
     			if (scan && game.map.entityGrid[dx][dy].length > 0) {
     				// something is there, put it back
@@ -89,18 +99,22 @@ game.PlayerEntity = me.SpriteObject.extend({
     	if (this.canInput) {
     		// check to make sure we don't move off field, then do stuff
 	    	if (me.input.isKeyPressed('left')) {
+	    		this.setCurrentAnimation("walk_left");
 	    		if (this.gridPos.x > 0) {
 	    			this.doMove(this.gridPos.x-1,this.gridPos.y);
 	    		}
 	    	} else if (me.input.isKeyPressed('right')) {
+	    		this.setCurrentAnimation("walk_right");
 	    		if (this.gridPos.x < game.map.gridWidth-1) {
 	    			this.doMove(this.gridPos.x+1,this.gridPos.y);	
 	    		}
 	    	} else if (me.input.isKeyPressed('up')) {
+	    		this.setCurrentAnimation("walk_up");
 	    		if (this.gridPos.y > 0) {
 	    			this.doMove(this.gridPos.x,this.gridPos.y-1);
 	    		}
 	    	} else if (me.input.isKeyPressed('down')) {
+	    		this.setCurrentAnimation("walk_down");
 	    		if (this.gridPos.y < game.map.gridHeight-1) {
 	    			this.doMove(this.gridPos.x,this.gridPos.y+1);
 	    		}
@@ -165,12 +179,19 @@ game.GRID = {
 		Y: 2
 	},
 	TILE_SIZE: 16,
-	NOTHING: -1,
-	DIRT_EMPTY: 0,
-	DIRT_GEM: 1,
-	HOIST: 2,
-	DIRT2_EMPTY: 3,
-	DIRT2_GEM: 4
+	
+	DIRT_EMPTY: 1,
+	DIRT2_EMPTY: 2,
+	DIRT3_EMPTY: 3,
+	DIRT4_EMPTY: 4,
+
+	ADD_GEM: 30,
+	DIRT_GEM: 31,
+	DIRT2_GEM: 32,
+	DIRT3_GEM: 33,
+	DIRT4_GEM: 34,
+	NOTHING: 1000,
+	HOIST: 1001
 }
 
 game.MapHandler = function() {
@@ -261,23 +282,9 @@ game.MapHandler.prototype.generateMap = function(w,h,diffFactor,seed) {
 		me.game.remove(game.player1);
 	}
 	game.player1 = me.entityPool.newInstanceOf('player',startX,startY);
-	me.game.add(game.player1,2);
+	me.game.add(game.player1,3);
 
 	// TODO - abstract these loops
-	while (gemCount > 0) {
-		// TODO - generate different kinds of gems?
-		var coords = game.rand_dist(wMu, wSigma, hMu, hSigma); // Array(2) of random std dist
-		//console.log(coords);
-		// throw out anything that's out of bounds
-		if (coords[0] < 0 || coords[0] >= w || coords[1] < 0 || coords[1] >= h) {
-			continue;
-		}
-		if (this.grid[coords[0]][coords[1]] != 0) {
-			continue; // already put something here
-		}
-		this.grid[coords[0]][coords[1]] = game.GRID.DIRT_GEM;
-		gemCount--;
-	}
 	while (dirt2Count > 0) {
 		// TODO - generate different kinds of gems?
 		var coords = game.rand_dist(wMu, wSigma, hMu, hSigma); // Array(2) of random std dist
@@ -287,15 +294,27 @@ game.MapHandler.prototype.generateMap = function(w,h,diffFactor,seed) {
 			continue;
 		}
 		// if a gem is in this spot, cover it
-		if (this.grid[coords[0]][coords[1]] === game.GRID.DIRT_GEM) {
-			this.grid[coords[0]][coords[1]] = game.GRID.DIRT2_GEM;
-			dirt2Count--;
-		} else if (this.grid[coords[0]][coords[1]] === game.GRID.DIRT_EMPTY) {
-			this.grid[coords[0]][coords[1]] = game.GRID.DIRT2_EMPTY;
+		if (this.grid[coords[0]][coords[1]] < game.GRID.DIRT4_EMPTY) {
+			this.grid[coords[0]][coords[1]]++; // add one level of dirt
 			dirt2Count--;
 		}
 		// else space is taken already, continue.
 		
+	}
+
+	while (gemCount > 0) {
+		// TODO - generate different kinds of gems?
+		var coords = game.rand_dist(wMu, wSigma, hMu, hSigma); // Array(2) of random std dist
+		//console.log(coords);
+		// throw out anything that's out of bounds
+		if (coords[0] < 0 || coords[0] >= w || coords[1] < 0 || coords[1] >= h) {
+			continue;
+		}
+		if (this.grid[coords[0]][coords[1]] >= game.GRID.DIRT_GEM) {
+			continue; // already put something here
+		}
+		this.grid[coords[0]][coords[1]] += game.GRID.ADD_GEM;
+		gemCount--;
 	}
 	
 }
@@ -304,54 +323,40 @@ game.MapHandler.prototype.populateLevel = function() {
 		var x = (game.GRID.ORIGIN.X + i)*game.GRID.TILE_SIZE;
 		for (var j = 0; j < this.gridHeight; j++) {
 			var y = (game.GRID.ORIGIN.Y + j)*game.GRID.TILE_SIZE;
-			switch(this.grid[i][j]) {
-				case game.GRID.DIRT_EMPTY:
-					var dirt = me.entityPool.newInstanceOf("dirt",x,y);
-					me.game.add(dirt,3);
-					this.entityGrid[i][j] = [dirt];
-					break;
-				case game.GRID.DIRT_GEM:
-					var dirt = me.entityPool.newInstanceOf("dirt",x,y);
-					var gem = me.entityPool.newInstanceOf('gem',x,y);
-					me.game.add(gem,2);
-					me.game.add(dirt,3);
-					this.entityGrid[i][j] = [gem,dirt];
-					break;
-				case game.GRID.HOIST:
-					var hoist = me.entityPool.newInstanceOf('hoist',x,y);
-					me.game.add(hoist,3);
-					this.entityGrid[i][j] = [hoist];
-					break;
-				case game.GRID.DIRT2_EMPTY:
-					var dirt = me.entityPool.newInstanceOf("dirt2",x,y);
-					me.game.add(dirt,3);
-					this.entityGrid[i][j] = [dirt];
-					break;
-				case game.GRID.DIRT2_GEM:
-					var dirt = me.entityPool.newInstanceOf("dirt2",x,y);
-					var gem = me.entityPool.newInstanceOf('gem',x,y);
-					me.game.add(gem,2);
-					me.game.add(dirt,3);
-					this.entityGrid[i][j] = [gem,dirt];
-					break;
-				case game.GRID.NOTHING:
-					this.entityGrid[i][j] = [];
-					break;
-				default:
-					console.log('derp');
-					this.entityGrid[i][j] = [];
-					break;
+			var cGrid = this.grid[i][j];
+			if (cGrid >= game.GRID.DIRT_EMPTY && cGrid <= game.GRID.DIRT4_EMPTY) {
+				//console.log(cGrid);
+				var dirt = me.entityPool.newInstanceOf("dirt",x,y,cGrid);
+				me.game.add(dirt,3);
+				this.entityGrid[i][j] = [dirt];
+			} else if (cGrid >= game.GRID.DIRT_GEM && cGrid <= game.GRID.DIRT4_GEM) {
+				//console.log(cGrid);
+				var dirt = me.entityPool.newInstanceOf("dirt",x,y,cGrid-game.GRID.ADD_GEM);
+				var gem = me.entityPool.newInstanceOf('gem',x,y);
+				me.game.add(gem,2);
+				me.game.add(dirt,3);
+				this.entityGrid[i][j] = [gem,dirt];
+			} else if (cGrid == game.GRID.HOIST) {
+				var hoist = me.entityPool.newInstanceOf('hoist',x,y);
+				me.game.add(hoist,3);
+				this.entityGrid[i][j] = [hoist];
+			} else {
+				//	case game.GRID.NOTHING:
+				this.entityGrid[i][j] = [];
 			}
 		}
 	}
+	me.game.sort();
 }
 
+game.debugDraw = false;
+game.nextGemId = 0;
 game.GemEntity = me.SpriteObject.extend({
 	
 	init: function(x, y) {
 		this.parent(x, y, me.loader.getImage("gem"));
 		this.anchorPoint.set(0.5,0.5);
-
+		this.name = 'gem'+(++game.nextGemId);
 		// entity that is picking us up
 		this.toucher = null;
 		this.gemValue = 1;
@@ -364,9 +369,15 @@ game.GemEntity = me.SpriteObject.extend({
 		if (!this.toucher) {
 			// notate who removed this object
 			this.toucher = from;
-			this.flicker(9);
-			this.z = 10;
+			this.z = 4;
+			
+			me.game.HUD.updateItemValue('gems',-this.gemValue);
+			if (me.game.HUD.getItemValue('gems') == 0) {
+				game.theHoist.setCurrentAnimation('flash');
+			}
+
 			me.game.sort();
+
 			var secondTween = new me.Tween(this).to({alpha: 0.0}, 500).onComplete(this.afterTween.bind(this));
 			var firstTween = new me.Tween(this.scale).to({x: 3.0, y: 3.0}, 200).onComplete(this.afterTween2.bind(this));
 			//var firstTween = new me.Tween(this.scale).delay(150).to(, 500).chain(secondTween);
@@ -384,20 +395,30 @@ game.GemEntity = me.SpriteObject.extend({
 
 	afterTween: function() {
 		// notify toucher that we're done animating
-		me.game.HUD.updateItemValue('gems',-this.gemValue);
 		me.game.remove(this);
 	},
 
 	update: function() {
 		this.parent();
 		return true;
+	},
+
+	draw: function(ctx,x,y) {
+		if (game.debugDraw) {
+			console.log(this.name+ ' is drawing');
+		}
+		this.parent(ctx,x,y);
 	}
 });
 
+debugGems = function() {
+	return me.game.getEntityByName('gem');
+};
+
 game.DirtEntity = me.SpriteObject.extend({
 
-	init: function(x, y, img) {
-		this.parent(x, y, img ? img : me.loader.getImage("dirt1"));
+	init: function(x, y, digs) {
+		this.parent(x, y, me.loader.getImage("dirt"+digs));
 		this.anchorPoint.set(0.5,0.5);
 		//this.setOpacity(0.4);
 
@@ -405,8 +426,8 @@ game.DirtEntity = me.SpriteObject.extend({
 		this.toucher = null;
 
 		// number of digs required to get rid of this
-		this.digs = 1;
-		this.maxDigs = 1;
+		this.digs = digs;
+		this.maxDigs = digs;
 	},
 
 	touch: function(from) {
@@ -436,6 +457,7 @@ game.DirtEntity = me.SpriteObject.extend({
 		// notify toucher that we're done animating
 		if (this.digs <= 0) {
 			me.game.remove(this);
+			me.game.sort();
 		} else {
 			this.scaleFlag = false;
 			//console.log(this.image,me.loader.getImage('dirt1'));
@@ -451,23 +473,23 @@ game.DirtEntity = me.SpriteObject.extend({
 	}
 });
 
-game.Dirt2Entity = game.DirtEntity.extend({
 
-	init: function(x, y) {
-		this.parent(x, y, me.loader.getImage("dirt2"));
-		// set digs
-		this.maxDigs = 2;
-		this.digs = 2;
-	}
-
-});
-
-game.HoistEntity = me.SpriteObject.extend({
+game.theHoist = null;
+game.HoistEntity = me.AnimationSheet.extend({
 	
 	init: function(x, y) {
-		this.parent(x, y, me.loader.getImage("hoist"));
+		this.parent(x, y, me.loader.getImage("hoist"), 16, 16);
 		this.anchorPoint.set(0.5,0.5);
+		game.theHoist = this;
+		this.setupAnimations();
 	},
+
+	setupAnimations: function() {
+    	this.addAnimation("idle",[0]);
+    	this.addAnimation("flash",[1,1,1,0],15);
+    	// default animation state
+    	this.setCurrentAnimation("idle");
+    },
 
 	touch: function(from) {
 		if (me.game.HUD.getItemValue('gems') === 0) {
@@ -497,119 +519,91 @@ game.ScanEntity = me.SpriteObject.extend({
 		this.parent((x+game.GRID.ORIGIN.X)*game.GRID.TILE_SIZE, (y+game.GRID.ORIGIN.Y)*game.GRID.TILE_SIZE, me.loader.getImage("scanner"));
 		this.anchorPoint.set(0.5,0.5);
 
-		this.toucher = from;
-		this.energy = 4;
+		//this.toucher = from;
+		this.energy = Math.floor( (1+Math.min(game.map.gridWidth,game.map.gridHeight)) /2);
 		this.walkDir = dir;
-		this.walkEnergy = 1; // when does it stop moving in one direction?
-		this.walked = []; // don't waste energy on the same thing
+		//this.walkEnergy = 2; // when does it stop moving in one direction?
 		this.nextScan(); // start scanning
 	},
 
 	nextScan: function() {
+		// remove object if out of energy
+		if (this.energy <= 0) {
+			//this.visible = false;
+			me.game.remove(this);
+			return;
+		}
+
+		this.energy--;
 		// do things in current cell before moving
-		var i = 0, ii = this.walked.length;
-		for (; i < ii; i++) {
-			if (this.walked[i].x == this.gridPos.x && this.walked[i].y == this.gridPos.y) {
-				// been here done that
-				//console.log("found scan result in history!",this.gridPos);
-				break;
+		
+		// scan current tile, get total cost + find out if we need to create a result
+		var egrid = game.map.entityGrid[this.gridPos.x][this.gridPos.y];
+		var cost = 0, found = false, scanned = false;
+		for (var i = 0, ii = egrid.length; i < ii; i++) {
+			//console.log(egrid[i]);
+			//if (egrid[i].digs) {
+			//	cost += egrid[i].digs;
+			//}
+			if (egrid[i].gemValue) {
+				found = true;
+			}
+			if (egrid[i].className === 'scanresult' || egrid[i].className === 'scanfail') {
+				scanned = true;
 			}
 		}
-		if (i === ii) {
-			//console.log("didn't found scan result in history!",this.gridPos);
-			// didn't find that node in the list, add it and subtract energy
-			var newPos = {
-				x: this.gridPos.x,
-				y: this.gridPos.y
-			};
-			this.walked.push(newPos); // clone
-			// scan tile, get total cost + find out if we need to create a result
-			var egrid = game.map.entityGrid[this.gridPos.x][this.gridPos.y];
-			var cost = 0, found = false, scanned = false;
-			for (var i = 0, ii = egrid.length; i < ii; i++) {
-				console.log(egrid[i]);
-				if (egrid[i].digs) {
-					cost += egrid[i].digs;
-				}
-				if (egrid[i].gemValue) {
-					found = true;
-				}
-				if (egrid[i].className === 'scanresult' || egrid[i].className === 'scanfail') {
-					scanned = true;
-				}
+		// create result entity + push it
+		if (!scanned) {
+			var scanResult = null;
+			if (found) {
+				scanResult = me.entityPool.newInstanceOf('scanresult',this.pos.x,this.pos.y);
+				this.energy -= 1; // only reduce energy when we find something
+			} else if (egrid.length > 0) {
+				scanResult = me.entityPool.newInstanceOf('scanfail',this.pos.x,this.pos.y);
 			}
-			// create result entity + push it
-			if (!scanned) {
-				var scanResult = null;
-				if (found) {
-					scanResult = me.entityPool.newInstanceOf('scanresult',this.pos.x,this.pos.y);
-				} else if (egrid.length > 0) {
-					scanResult = me.entityPool.newInstanceOf('scanfail',this.pos.x,this.pos.y);
-				}
-				if (scanResult) {
-					me.game.add(scanResult,7);
-					egrid.push(scanResult);
-					me.game.sort();
-				}
-				if (cost) {
-					this.energy -= 1; //cost; // via digs
-				}
+			if (scanResult) {
+				me.game.add(scanResult,7);
+				egrid.push(scanResult);
+				me.game.sort();
 			}
 		}
 		
-		if (this.energy <= this.walkEnergy) {
-			// move in a random direction
-			this.walkDir = Math.floor(Math.random()*4);
-		}
 		switch(this.walkDir) {
 			case 0:
 				if (this.gridPos.x > 0) {
 					this.gridPos.x--;
 				} else {
-					// we hit an edge, so allow turning
-					this.walkEnergy = this.energy;
+					this.energy = 0;
 				}
 				break;
 			case 1:
 				if (this.gridPos.x < game.map.gridWidth-1) {
 					this.gridPos.x++;
 				} else {
-					// we hit an edge, so allow turning
-					this.walkEnergy = this.energy;
+					this.energy = 0;
 				}
 				break;
 			case 2:
 				if (this.gridPos.y > 0) {
 					this.gridPos.y--;
 				} else {
-					// we hit an edge, so allow turning
-					this.walkEnergy = this.energy;
+					this.energy = 0;
 				}
 				break;
 			case 3:
 				if (this.gridPos.y < game.map.gridHeight-1) {
 					this.gridPos.y++;
 				} else {
-					// we hit an edge, so allow turning
-					this.walkEnergy = this.energy;
+					this.energy = 0;
 				}
 				break;
 		}
-		// remove object if out of energy
-		if (this.energy <= 0) {
-			me.game.remove(this);
-			return;
-		}
+		
 		// animate with tween
-		var tween = new me.Tween(this.pos).to({x: (this.gridPos.x+game.GRID.ORIGIN.X)*game.GRID.TILE_SIZE, y: (this.gridPos.y+game.GRID.ORIGIN.Y)*game.GRID.TILE_SIZE}, 250)
+		var tween = new me.Tween(this.pos).to({x: (this.gridPos.x+game.GRID.ORIGIN.X)*game.GRID.TILE_SIZE, y: (this.gridPos.y+game.GRID.ORIGIN.Y)*game.GRID.TILE_SIZE}, 400)
     			.onComplete(this.nextScan.bind(this));
 		tween.easing(me.Tween.Easing.Cubic.EaseInOut);
 		tween.start();
-	},
-
-	update: function() {
-		this.parent();
-		return true;
 	}
 });
 
