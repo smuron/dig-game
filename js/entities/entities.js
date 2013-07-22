@@ -124,19 +124,19 @@ game.PlayerEntity = me.AnimationSheet.extend({
 	    		var scanObj;
 	    		if (this.gridPos.x > 0) {
 	    			scanObj = me.entityPool.newInstanceOf('scanner',this.gridPos.x-1,this.gridPos.y,0);
-	    			me.game.add(scanObj,4);
+	    			me.game.add(scanObj,8);
 	    		}
 	    		if (this.gridPos.x < game.map.gridWidth-1) {
 	    			scanObj = me.entityPool.newInstanceOf('scanner',this.gridPos.x+1,this.gridPos.y,1);
-	    			me.game.add(scanObj,4);
+	    			me.game.add(scanObj,8);
 	    		}
 	    		if (this.gridPos.y > 0) {
 	    			scanObj = me.entityPool.newInstanceOf('scanner',this.gridPos.x,this.gridPos.y-1,2);
-	    			me.game.add(scanObj,4);
+	    			me.game.add(scanObj,8);
 	    		}
 	    		if (this.gridPos.y < game.map.gridHeight-1) {
 	    			scanObj = me.entityPool.newInstanceOf('scanner',this.gridPos.x,this.gridPos.y+1,3);
-	    			me.game.add(scanObj,4);
+	    			me.game.add(scanObj,8);
 	    		}
 	    		this.moveDone(8);
 	    		me.game.sort();
@@ -282,7 +282,7 @@ game.MapHandler.prototype.generateMap = function(w,h,diffFactor,seed) {
 		me.game.remove(game.player1);
 	}
 	game.player1 = me.entityPool.newInstanceOf('player',startX,startY);
-	me.game.add(game.player1,3);
+	me.game.add(game.player1,5);
 
 	// TODO - abstract these loops
 	while (dirt2Count > 0) {
@@ -327,18 +327,18 @@ game.MapHandler.prototype.populateLevel = function() {
 			if (cGrid >= game.GRID.DIRT_EMPTY && cGrid <= game.GRID.DIRT4_EMPTY) {
 				//console.log(cGrid);
 				var dirt = me.entityPool.newInstanceOf("dirt",x,y,cGrid);
-				me.game.add(dirt,3);
+				me.game.add(dirt,4);
 				this.entityGrid[i][j] = [dirt];
 			} else if (cGrid >= game.GRID.DIRT_GEM && cGrid <= game.GRID.DIRT4_GEM) {
 				//console.log(cGrid);
 				var dirt = me.entityPool.newInstanceOf("dirt",x,y,cGrid-game.GRID.ADD_GEM);
 				var gem = me.entityPool.newInstanceOf('gem',x,y);
-				me.game.add(gem,2);
-				me.game.add(dirt,3);
+				me.game.add(gem,3);
+				me.game.add(dirt,4);
 				this.entityGrid[i][j] = [gem,dirt];
 			} else if (cGrid == game.GRID.HOIST) {
 				var hoist = me.entityPool.newInstanceOf('hoist',x,y);
-				me.game.add(hoist,3);
+				me.game.add(hoist,4);
 				this.entityGrid[i][j] = [hoist];
 			} else {
 				//	case game.GRID.NOTHING:
@@ -374,7 +374,7 @@ game.GemEntity = me.SpriteObject.extend({
 		if (!this.toucher) {
 			// notate who removed this object
 			this.toucher = from;
-			this.z = 4;
+			this.z = 10;
 			
 			me.game.HUD.updateItemValue('gems',-this.gemValue);
 			if (me.game.HUD.getItemValue('gems') == 0) {
@@ -567,7 +567,7 @@ game.ScanEntity = me.SpriteObject.extend({
 				scanResult = me.entityPool.newInstanceOf('scanfail',this.pos.x,this.pos.y);
 			}
 			if (scanResult) {
-				me.game.add(scanResult,7);
+				me.game.add(scanResult,9);
 				egrid.push(scanResult);
 				me.game.sort();
 			}
