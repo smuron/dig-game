@@ -18,7 +18,7 @@ game.resources = [
 	 
 	 {name: "gem", type:"image", src: "data/img/sprite/gem.png"},
 	 {name: "hoist", type:"image", src: "data/img/sprite/hoist.png"},
-
+	 {name: "dust", type:"image", src: "data/img/sprite/dust.png"},
 
 
 	 {name: "bkg0", type:"image", src: "data/img/bkg0.png"},

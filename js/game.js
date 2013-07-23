@@ -1,4 +1,6 @@
-
+function baseLog(b,x) {
+    return Math.log(x) / Math.log(b);
+}
 /* Game namespace */
 var game = {
     // Run on page load.
@@ -16,13 +18,15 @@ var game = {
 			});
 		}
 
+        
+
         // Initialize the audio.
         me.audio.init("mp3,ogg");
         game.levelNum = 0;
         // generate test level on load
         me.game.onLevelLoaded = function(levelId) {
             game.levelNum++;
-            game.map.generateMap(5+game.levelNum,5+game.levelNum,Math.pow(1.613,game.levelNum*0.5));
+            game.map.generateMap(7+Math.floor(baseLog(2,game.levelNum)),7+Math.floor(baseLog(2,game.levelNum)),game.levelNum);
             //game.player1 = me.game.add(new game.PlayerEntity(64,64),0);
             game.map.populateLevel();
             me.game.add(new me.ImageLayer('bkg0',640,480,'bkg0',0),2);
@@ -32,6 +36,7 @@ var game = {
 
         // setup the game font
         game.font = new me.Font("Iceberg", 32, "#ffffff");
+        
 
         // Set a callback to run when loading is complete.
         me.loader.onload = this.loaded.bind(this);
@@ -57,6 +62,7 @@ var game = {
         me.input.bindKey(me.input.KEY.UP, "up", true);
         me.input.bindKey(me.input.KEY.DOWN, "down", true);
         me.input.bindKey(me.input.KEY.SPACE, "space", true);
+        me.input.bindKey(me.input.KEY.N, "n", true);
 
          // create the MapHandler instance
         game.map = new game.MapHandler();
@@ -77,8 +83,11 @@ var game = {
         me.entityPool.add('gem',game.GemEntity,true);
         me.entityPool.add('hoist',game.HoistEntity,true);
 
+        // dangerous entities
+        me.entityPool.add("dust",game.DustEntity,true);
+
         me.game.addHUD(0,0,640,96);
-        me.game.HUD.addItem('moves', new game.MoveCounter(0,32));
+        me.game.HUD.addItem('stamina', new game.MoveCounter(0,32));
         me.game.HUD.addItem('gems', new game.GemCounter(34,64));
 
         // Start the game.
