@@ -1,4 +1,4 @@
 dig-game
 ========
 
-TODO
+The game about digging vague looking rock for vague looking gems.
